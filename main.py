@@ -8,6 +8,41 @@ from selenium.webdriver.common.keys import Keys
 from dotenv import load_dotenv
 import os
 
+from google.oauth2.credentials import Credentials
+from google_auth_oauthlib.flow import InstalledAppFlow
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+
+SCOPES = ['https://www.googleapis.com/auth/drive.file']
+
+def upload_to_drive(file_path, folder_id=None):
+    creds = None
+
+    if os.path.exists('token.json'):
+        creds = Credentials.from_authorized_user_file('token.json', SCOPES)
+    
+    if not creds or not creds.valid:
+        if creds and creds.expired and creds.refresh_token:
+            creds.refresh(Request())
+        else:
+            flow = InstalledAppFlow.from_client_secrets_file('credentials.json', SCOPES)
+            creds = flow.run_local_server(port=8080)
+        with open('token.json', 'w') as token:
+            token.write(creds.to_json())
+
+    service = build('drive', 'v3', credentials=creds)
+
+    file_metadata = {'name': os.path.basename(file_path)}
+    if folder_id:
+        file_metadata['parents'] = [folder_id]
+
+    media = MediaFileUpload(file_path, mimetype='text/csv')
+
+    file = service.files().create(body=file_metadata, media_body=media, fields='id').execute()
+
+    print(f'Arquivo enviado para o Drive. ID: {file.get("id")}')
+
 load_dotenv()
 EMAIL = os.getenv("LINKEDIN_EMAIL")
 PASSWORD = os.getenv("LINKEDIN_PASSWORD")
@@ -29,7 +64,7 @@ senha_input = driver.find_element(By.ID, "password")
 senha_input.send_keys(PASSWORD)
 
 senha_input.send_keys(Keys.RETURN)
-time.sleep(5)  # esperar login concluir
+time.sleep(20)  # esperar login concluir e/ou captcha
 
 index = 0
 data = []
@@ -61,10 +96,11 @@ while True:
     except:
         print(f"Não encontrou vagas na página {index}, finalizando.")
         break
-         
 
-print(data)
+csv_path = "vagas_aplicadas.csv"
 df = pd.DataFrame(data)
-df.to_csv("vagas_aplicadas.csv", index = False, encoding="UTF-8")
+df.to_csv(csv_path, index = False, encoding="UTF-8")
 
 driver.quit()
+
+upload_to_drive(csv_path)
