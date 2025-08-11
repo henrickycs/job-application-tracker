@@ -73,15 +73,19 @@ while True:
     try:
         time.sleep(5)
 
-        ul = driver.find_element(By.CSS_SELECTOR, ".hZRqGQjZkeoyTtaUlHFlUDfmbvQbtmbCgyo.list-style-none")
-        lis = ul.find_elements(By.CLASS_NAME, "yEVDvREvYAajFiBIIVhkzjsMXySLhBCUA ")
+        ul = driver.find_element(By.CSS_SELECTOR, ".list-style-none")
+        divs = ul.find_elements(By.CSS_SELECTOR, ".linked-area.flex-1.cursor-pointer")
 
-        for li in lis:
-                line = li.text.strip().split("\n")
+        if not divs:
+             print(f"Não encontrou vagas na página {index}, finalizando.")
+             break
+
+        for div in divs:
+                line = div.text.strip().split("\n")
                 title = line[0]
-                business = li.find_element(By.CSS_SELECTOR, ".xbQbBliPjkmWUSjRqkTSFsPJqspuFTLRySodk.t-14.t-black.t-normal").text.strip()
-                localization = li.find_element(By.CSS_SELECTOR, ".FMtHznKrVeoQCZyiyseTglmsAmMqGROzOlZdY.t-14.t-normal").text.strip()
-                application_date = li.find_element(By.CSS_SELECTOR, ".gyOdlZQjtxbuVjKvZqzHCMJYwnbHIJVhcumU.reusable-search-simple-insight__text--small").text.strip()
+                business = div.find_element(By.CSS_SELECTOR, ".t-14.t-black.t-normal").text.strip()
+                localization = div.find_element(By.CSS_SELECTOR, ".t-14.t-normal:not(.t-black)").text.strip()
+                application_date = div.find_element(By.CSS_SELECTOR, ".workflow-posted-jobs__jobs-insight").text.strip()
 
                 data.append({
                         "Título": title,
@@ -89,6 +93,7 @@ while True:
                         "Localização": localization,
                         "Tempo Candidatura": application_date,
                         "Site": "LinkedIn"
+
                 })
         print(data)
         index +=10
